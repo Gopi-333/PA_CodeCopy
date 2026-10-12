@@ -6,7 +6,10 @@ namespace PaCodeCopy.Core.Detection;
 /// <param name="IsPadScript">True when the text looks like Power Automate Desktop code.</param>
 /// <param name="Score">Total heuristic score (compare with the threshold).</param>
 /// <param name="ActionCount">Number of lines recognised as PAD actions or control statements.</param>
-/// <param name="FirstAction">First recognised action, e.g. "Excel.ReadFromExcel" or "SET"; used for default names.</param>
+/// <param name="FirstAction">
+/// First module action (e.g. "Excel.ReadFromExcel"), or the first statement keyword (e.g. "SET") if there is
+/// no module action. Used for default snippet names.
+/// </param>
 public sealed record DetectionResult(bool IsPadScript, int Score, int ActionCount, string? FirstAction);
 
 /// <summary>
@@ -103,7 +106,8 @@ public sealed class PadScriptDetector
 
         var score = 0;
         var actionCount = 0;
-        string? firstAction = null;
+        string? firstKeyword = null;
+        string? firstModuleAction = null;
         var hasControlRepository = false;
 
         var lines = text.Split('\n');
@@ -137,7 +141,7 @@ public sealed class PadScriptDetector
                 {
                     score += StrongStatementScore;
                     actionCount++;
-                    firstAction ??= keyword;
+                    firstKeyword ??= keyword;
                     score += MarkerScoreFor(line);
                     continue;
                 }
@@ -158,7 +162,7 @@ public sealed class PadScriptDetector
                     if (hasParameters)
                     {
                         actionCount++;
-                        firstAction ??= ShortActionName(action.Groups["action"].Value);
+                        firstModuleAction ??= ShortActionName(action.Groups["action"].Value);
                     }
 
                     score += MarkerScoreFor(line);
@@ -168,11 +172,11 @@ public sealed class PadScriptDetector
         catch (RegexMatchTimeoutException)
         {
             // Pathological input: treat as "not PAD" rather than freezing the UI.
-            return new DetectionResult(false, score, actionCount, firstAction);
+            return new DetectionResult(false, score, actionCount, firstModuleAction ?? firstKeyword);
         }
 
         var isPad = score >= Threshold && (actionCount > 0 || hasControlRepository);
-        return new DetectionResult(isPad, score, actionCount, firstAction);
+        return new DetectionResult(isPad, score, actionCount, firstModuleAction ?? firstKeyword);
     }
 
     private static string? MatchStatement(string line)

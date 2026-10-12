@@ -71,7 +71,7 @@ Add `--self-contained true` if the target PCs do not have .NET installed (the ex
 
 1. Start **PaCodeCopy.exe**. Leave **Auto-capture** on.
 2. In the PAD designer, select one or more actions and press **Ctrl+C**.
-3. The snippet appears at the top of the list. Its default name is the first action plus the time.
+3. The snippet appears at the top of the list. Its default name is the first action, e.g. `Excel.LaunchExcel +5 more`.
 4. Press **F2** to give it a clear name, a category (e.g. `Excel`, `Web`, `Outlook`) and tags.
 5. To reuse it, select the snippet, press **Ctrl+Shift+C** (or double-click), then paste into PAD with **Ctrl+V**.
 

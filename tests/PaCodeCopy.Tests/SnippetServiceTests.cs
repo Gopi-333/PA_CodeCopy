@@ -34,7 +34,7 @@ public sealed class SnippetServiceTests : IDisposable
         var snippet = result.Snippet!;
         Assert.True(File.Exists(snippet.FilePath));
         Assert.Equal(Samples.ExcelLoop, File.ReadAllText(snippet.FilePath));
-        Assert.StartsWith("SET ", snippet.Name);
+        Assert.Equal("Excel.LaunchExcel +5 more", snippet.Name);
         Assert.Equal("General", snippet.Category);
         Assert.Equal(6, snippet.ActionCount);
         Assert.NotNull(_repository.GetByHash(snippet.Hash));

@@ -42,6 +42,7 @@ internal sealed class MainForm : Form
         BackColor = SystemColors.Window,
         DetectUrls = false,
     };
+    private readonly SplitContainer _split = new() { Dock = DockStyle.Fill, FixedPanel = FixedPanel.Panel1 };
     private readonly ToolStripStatusLabel _statusLabel = new() { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
     private readonly ToolStripStatusLabel _countLabel = new();
     private readonly NotifyIcon _trayIcon = new();
@@ -49,7 +50,11 @@ internal sealed class MainForm : Form
     private readonly System.Windows.Forms.Timer _searchTimer = new() { Interval = 300 };
 
     private ClipboardMonitor? _clipboardMonitor;
-    private bool _ignoreNextClipboardChange;
+    // Writing to the clipboard can raise several WM_CLIPBOARDUPDATE messages (e.g. when the data is
+    // flushed so it survives app exit), so our own copies are recognised by content, not by counting events.
+    private static readonly TimeSpan SelfCopyWindow = TimeSpan.FromSeconds(3);
+    private string? _selfCopiedHash;
+    private DateTime _selfCopiedAtUtc;
     private bool _updatingToggles;
 
     public MainForm(SnippetService service, SettingsStore settingsStore, AppSettings settings, IAppLogger logger)
@@ -75,6 +80,11 @@ internal sealed class MainForm : Form
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
+
+        // Splitter sizes must be set after the form has its real size, otherwise WinForms clamps them.
+        _split.Panel1MinSize = 300;
+        _split.SplitterDistance = Math.Max(_split.Panel1MinSize, Math.Min(480, _split.Width - _split.Panel2MinSize));
+
         StartClipboardMonitor();
         SetAutoCapture(_settings.AutoCapture, save: false);
         ReloadCategories();
@@ -162,23 +172,16 @@ internal sealed class MainForm : Form
         leftPanel.Controls.Add(_list);
         leftPanel.Controls.Add(filterPanel);
 
-        var split = new SplitContainer
-        {
-            Dock = DockStyle.Fill,
-            SplitterDistance = 460,
-            Panel1MinSize = 300,
-            FixedPanel = FixedPanel.Panel1,
-        };
-        split.Panel1.Padding = new Padding(6);
-        split.Panel2.Padding = new Padding(6);
-        split.Panel1.Controls.Add(leftPanel);
-        split.Panel2.Controls.Add(_preview);
+        _split.Panel1.Padding = new Padding(6);
+        _split.Panel2.Padding = new Padding(6);
+        _split.Panel1.Controls.Add(leftPanel);
+        _split.Panel2.Controls.Add(_preview);
 
         var statusStrip = new StatusStrip();
         statusStrip.Items.Add(_statusLabel);
         statusStrip.Items.Add(_countLabel);
 
-        Controls.Add(split);
+        Controls.Add(_split);
         Controls.Add(toolbar);
         Controls.Add(statusStrip);
     }
@@ -247,20 +250,13 @@ internal sealed class MainForm : Form
 
     private void OnClipboardChanged(object? sender, EventArgs e)
     {
-        if (_ignoreNextClipboardChange)
-        {
-            // This change came from our own "Copy to clipboard".
-            _ignoreNextClipboardChange = false;
-            return;
-        }
-
         if (!_settings.AutoCapture)
         {
             return;
         }
 
         var text = ClipboardHelper.TryGetText(_logger);
-        if (text is null)
+        if (text is null || IsOwnCopy(text))
         {
             return;
         }
@@ -395,16 +391,36 @@ internal sealed class MainForm : Form
             return;
         }
 
-        _ignoreNextClipboardChange = _clipboardMonitor is not null;
-        if (ClipboardHelper.TrySetText(_service.ReadContent(snippet), _logger))
+        var content = _service.ReadContent(snippet);
+        _selfCopiedHash = SnippetService.ComputeHash(content);
+        _selfCopiedAtUtc = DateTime.UtcNow;
+        if (ClipboardHelper.TrySetText(content, _logger))
         {
             SetStatus($"Copied '{snippet.Name}'. Paste it into the PAD designer with Ctrl+V.");
         }
         else
         {
-            _ignoreNextClipboardChange = false;
+            _selfCopiedHash = null;
             SetStatus("Could not write to the clipboard. Try again.");
         }
+    }
+
+    /// <summary>True when the clipboard holds the text this app copied a moment ago.</summary>
+    private bool IsOwnCopy(string text)
+    {
+        if (_selfCopiedHash is null)
+        {
+            return false;
+        }
+
+        if (DateTime.UtcNow - _selfCopiedAtUtc <= SelfCopyWindow &&
+            string.Equals(SnippetService.ComputeHash(text), _selfCopiedHash, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        _selfCopiedHash = null;
+        return false;
     }
 
     private void EditSelected()

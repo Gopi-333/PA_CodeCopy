@@ -13,7 +13,7 @@ public class PadScriptDetectorTests
 
         Assert.True(result.IsPadScript);
         Assert.Equal(6, result.ActionCount);
-        Assert.Equal("SET", result.FirstAction);
+        Assert.Equal("Excel.LaunchExcel", result.FirstAction);
     }
 
     [Fact]
@@ -60,6 +60,12 @@ public class PadScriptDetectorTests
 
         Assert.False(result.IsPadScript);
         Assert.Equal(0, result.Score);
+    }
+
+    [Fact]
+    public void FirstAction_falls_back_to_keyword_when_there_is_no_module_action()
+    {
+        Assert.Equal("SET", _detector.Analyze("SET a TO 1\nSET b TO 2").FirstAction);
     }
 
     [Fact]

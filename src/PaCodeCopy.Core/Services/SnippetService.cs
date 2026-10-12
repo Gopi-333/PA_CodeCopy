@@ -56,7 +56,7 @@ public sealed class SnippetService
     /// <param name="text">The code (usually clipboard text).</param>
     /// <param name="source">Auto (clipboard watcher) or Manual (user action).</param>
     /// <param name="requirePadScript">When true, text that does not look like PAD code is ignored.</param>
-    /// <param name="name">Optional name; defaults to the first action plus time.</param>
+    /// <param name="name">Optional name; defaults to the first action, e.g. "Excel.LaunchExcel +5 more".</param>
     /// <param name="category">Optional category; defaults to <see cref="DefaultCategory"/>.</param>
     /// <param name="tags">Optional comma-separated tags.</param>
     public SaveResult Save(
@@ -100,7 +100,7 @@ public sealed class SnippetService
 
             var snippet = new Snippet
             {
-                Name = string.IsNullOrWhiteSpace(name) ? DefaultName(detection, now) : name.Trim(),
+                Name = string.IsNullOrWhiteSpace(name) ? DefaultName(detection) : name.Trim(),
                 Category = string.IsNullOrWhiteSpace(category) ? DefaultCategory : category.Trim(),
                 Tags = NormalizeTags(tags),
                 Hash = hash,
@@ -270,8 +270,11 @@ public sealed class SnippetService
             : string.Join(", ", tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Distinct(StringComparer.OrdinalIgnoreCase));
 
-    private static string DefaultName(DetectionResult detection, DateTime utcNow) =>
-        $"{detection.FirstAction ?? "Snippet"} {utcNow.ToLocalTime():yyyy-MM-dd HH-mm-ss}";
+    // The file name already starts with the date/time, so it is not repeated here.
+    private static string DefaultName(DetectionResult detection) =>
+        detection.FirstAction is null ? "Snippet"
+        : detection.ActionCount > 1 ? $"{detection.FirstAction} +{detection.ActionCount - 1} more"
+        : detection.FirstAction;
 
     private static string ShortHash(string hash) => hash.Length > 8 ? hash[..8] : hash;
 
