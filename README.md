@@ -38,6 +38,13 @@ The `.txt` files are the source of truth. You can back them up, sync them with O
 
 > **Security note:** PAD flows sometimes contain passwords or keys as plain text. Snippets are stored **unencrypted** on your disk, so keep the snippets folder somewhere private. Snippet code is never written to the log files.
 
+## Download (no build needed)
+
+1. Download **[PaCodeCopy-win-x64.zip](https://github.com/Gopi-333/PA_CodeCopy/raw/claude/vigilant-goodall-m6rat4/downloads/PaCodeCopy-win-x64.zip)** (1.1 MB, Windows 64-bit).
+2. Install the free **.NET 8 Desktop Runtime (x64)** once: https://dotnet.microsoft.com/download/dotnet/8.0
+3. Right-click the zip → **Extract All** → double-click **PaCodeCopy.exe**.
+   If Windows says "Windows protected your PC", click **More info → Run anyway** (the exe is not code-signed).
+
 ## Requirements
 
 - Windows 10/11
