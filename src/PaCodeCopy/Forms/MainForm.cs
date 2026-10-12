@@ -21,7 +21,8 @@ internal sealed class MainForm : Form
     private readonly IAppLogger _logger;
     private AppSettings _settings;
 
-    private readonly ToolStripButton _autoCaptureButton = new("Auto-capture") { CheckOnClick = true, ToolTipText = "Save PAD code automatically when it is copied" };
+    // On/off switch. The text and colour show the current state, because a "checked" toolbar button is hard to see.
+    private readonly ToolStripButton _autoCaptureButton = new("Auto-capture: ON") { CheckOnClick = true };
     private readonly TextBox _searchBox = new() { Dock = DockStyle.Fill, PlaceholderText = "Search name, tags or code…  (Ctrl+F)" };
     private readonly ComboBox _categoryFilter = new() { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly ListView _list = new()
@@ -309,10 +310,21 @@ internal sealed class MainForm : Form
 
         _settings.AutoCapture = enabled;
         _trayIcon.Text = enabled ? "PA CodeCopy - auto-capture ON" : "PA CodeCopy - auto-capture OFF";
+        _autoCaptureButton.Text = enabled ? "Auto-capture: ON" : "Auto-capture: OFF";
+        _autoCaptureButton.ForeColor = enabled ? Color.DarkGreen : Color.Firebrick;
+        if (!_autoCaptureButton.Font.Bold)
+        {
+            _autoCaptureButton.Font = new Font(_autoCaptureButton.Font, FontStyle.Bold);
+        }
+        _autoCaptureButton.ToolTipText = enabled
+            ? "ON: PAD code is saved automatically when you copy it. Click to turn OFF."
+            : "OFF: copies are not saved automatically. Click to turn ON.";
         if (save)
         {
             SaveSettings();
-            SetStatus(enabled ? "Auto-capture is ON." : "Auto-capture is OFF.");
+            SetStatus(enabled
+                ? "Auto-capture is ON. Copy actions in PAD (Ctrl+C) and they are saved automatically."
+                : "Auto-capture is OFF. Use 'Save from clipboard' (Ctrl+S) to save manually.");
         }
     }
 
