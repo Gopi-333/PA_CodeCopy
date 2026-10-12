@@ -1,0 +1,13 @@
+## .NET / Visual Studio
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userprefs
+TestResults/
+*.trx
+publish/
+artifacts/
+.idea/
+*.swp
