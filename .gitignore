@@ -11,3 +11,10 @@ publish/
 artifacts/
 .idea/
 *.swp
+
+## Python
+__pycache__/
+*.pyc
+python/build/
+python/dist/
+*.spec

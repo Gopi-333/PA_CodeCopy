@@ -45,6 +45,12 @@ The `.txt` files are the source of truth. You can back them up, sync them with O
 3. Right-click the zip → **Extract All** → double-click **PaCodeCopy.exe**.
    If Windows says "Windows protected your PC", click **More info → Run anyway** (the exe is not code-signed).
 
+## Python version
+
+A Python version with the same features lives in [`python/`](python/README.md). It uses only the standard library, and you can also download it as one exe:
+**[PaCodeCopy-py.exe](https://github.com/Gopi-333/PA_CodeCopy/releases/download/python-latest/PaCodeCopy-py.exe)**.
+It shares the snippets folder, index and settings with this app, so both show the same snippets.
+
 ## Requirements
 
 - Windows 10/11

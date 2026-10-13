@@ -1,0 +1,49 @@
+name: Python version - build Windows exe
+
+on:
+  push:
+    paths:
+      - "python/**"
+      - ".github/workflows/python-exe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write  # needed to publish the "python-latest" release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests -t . -v
+
+      - name: Build PaCodeCopy-py.exe
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller==6.11.1
+          python -m PyInstaller --noconfirm --onefile --windowed --name PaCodeCopy-py pa_codecopy.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PaCodeCopy-py
+          path: python/dist/PaCodeCopy-py.exe
+
+      - name: Publish to release "python-latest"
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete python-latest --yes --cleanup-tag || true
+          gh release create python-latest dist/PaCodeCopy-py.exe \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "PA CodeCopy (Python) - latest build" \
+            --notes "Windows build of the Python version from commit $GITHUB_SHA (branch $GITHUB_REF_NAME). Unzip not needed: download PaCodeCopy-py.exe and double-click it."
