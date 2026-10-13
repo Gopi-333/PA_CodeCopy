@@ -138,10 +138,17 @@ class MainWindow:
         y_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         self._preview.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        panes.add(left, weight=0)
-        panes.add(right, weight=1)
-        # Give the list a sensible starting width once the window has its real size.
-        self.root.after(50, lambda: panes.sashpos(0, 500))
+        panes.add(left, weight=2)
+        panes.add(right, weight=3)
+
+        # Set the list width once the window is really shown. Setting it earlier (while the window is
+        # still hidden and 1 px wide) squeezes the list to 0 px on Windows.
+        def place_sash(_event=None) -> None:
+            if panes.winfo_width() > 600:
+                panes.sashpos(0, 500)
+                panes.unbind("<Configure>", bind_id)
+
+        bind_id = panes.bind("<Configure>", place_sash, add="+")
 
     def _bind_keys(self) -> None:
         # Windows users expect Ctrl+A to select all text; Tk does not do that by default everywhere.
@@ -445,7 +452,9 @@ class MainWindow:
         self._preview.configure(state=tk.NORMAL)
         self._preview.delete("1.0", tk.END)
         if snippet is not None:
-            self._preview.insert("1.0", self._service.read_content(snippet))
+            # PAD copies use Windows line endings; Tk would draw each \r as a box.
+            content = self._service.read_content(snippet).replace("\r\n", "\n").replace("\r", "\n")
+            self._preview.insert("1.0", content)
         self._preview.configure(state=tk.DISABLED)
 
     def _set_status(self, message: str) -> None:
