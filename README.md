@@ -24,6 +24,7 @@ END
 | Organise | Rename, change the category and add tags (F2). The file is renamed or moved to match. |
 | Tray | Minimise to the system tray. A balloon shows each auto-saved snippet. |
 | Rebuild index | Re-scan the snippets folder (after a restore, a sync, or files added by hand). |
+| Extract PAD flow | One click copies **all subflows** of the flow open in the PAD designer (see below). |
 
 ## Where data is stored
 
@@ -98,6 +99,26 @@ Add `--self-contained true` if the target PCs do not have .NET installed (the ex
 | F2 | Edit name / category / tags |
 | Del | Delete selected snippet |
 | F5 | Refresh list |
+
+## Extract a whole flow with one click
+
+**Extract PAD flow** (toolbar or tray menu) copies **every subflow** of the flow that is open in the PAD designer and saves
+each one as a snippet: **category = flow name**, **name = subflow name** (`Main`, `Login`, …).
+
+1. In Power Automate Desktop, open the flow (select it → **Edit**). If several flows are open, PA CodeCopy asks which one.
+2. In PA CodeCopy, click **Extract PAD flow**.
+3. Don't use the mouse or keyboard while it runs: it clicks each subflow tab and presses **Ctrl+A**, **Ctrl+C**.
+   A small box in the bottom-right corner shows progress. Press **Esc** to cancel.
+4. A summary lists each subflow: `[+]` saved, `[=]` already saved (unchanged), `[ ]` empty, `[!]` failed.
+   The list then shows only that flow's snippets.
+
+Your flow is **not changed**: only selection and copy shortcuts are sent. Your clipboard text is put back afterwards.
+Run it again after you change the flow: unchanged subflows are skipped, and changed ones are saved as new snippets.
+
+**If a subflow is missing:** PAD's window structure is not documented, so the extractor finds the subflow tabs
+(the tab strip that contains **Main**) and the action list with general rules. If they do not match your PAD version,
+it copies only the subflow that is open and says so. Click **Scan PAD window…** and send the file it creates in
+`Documents\PaCodeCopy\Diagnostics` (check it first: it can contain text from your flow), so the rules can be adjusted.
 
 ## Settings
 

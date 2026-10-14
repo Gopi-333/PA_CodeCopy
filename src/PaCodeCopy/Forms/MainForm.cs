@@ -12,7 +12,7 @@ namespace PaCodeCopy.Forms;
 /// Main window: snippet list with search on the left, code preview on the right,
 /// toolbar actions on top, and a tray icon for background capture.
 /// </summary>
-internal sealed class MainForm : Form
+internal sealed partial class MainForm : Form
 {
     private const string AllCategories = "(All categories)";
 
@@ -104,6 +104,7 @@ internal sealed class MainForm : Form
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
+        _extractionCts?.Cancel();
         _clipboardMonitor?.Dispose();
         _trayIcon.Visible = false;
         _trayIcon.Dispose();
@@ -148,6 +149,7 @@ internal sealed class MainForm : Form
         {
             Button("Save from clipboard", "Save the code currently on the clipboard (Ctrl+S)", SaveFromClipboard),
             Button("Paste && Save…", "Paste or type code and save it with a name", PasteAndSave),
+            Button("Extract PAD flow", "Copy every subflow of the flow open in the PAD designer and save each one (one click)", ExtractPadFlow),
             new ToolStripSeparator(),
             Button("Copy to clipboard", "Copy the selected snippet so you can paste it into PAD (Ctrl+Shift+C)", CopySelectedToClipboard),
             Button("Edit…", "Rename, re-categorise or tag the selected snippet (F2)", EditSelected),
@@ -155,6 +157,7 @@ internal sealed class MainForm : Form
             new ToolStripSeparator(),
             Button("Open folder", "Show the snippet file in Explorer", OpenFolder),
             Button("Rebuild index", "Re-scan the snippets folder and rebuild the search index", RebuildIndex),
+            Button("Scan PAD window…", "Troubleshooting: save PAD's window structure to a file", ScanPadWindow),
             new ToolStripSeparator(),
             _autoCaptureButton,
             Button("Settings…", "Change folder, strictness and other options", OpenSettings),
@@ -192,6 +195,7 @@ internal sealed class MainForm : Form
         var menu = new ContextMenuStrip();
         menu.Items.Add("Open PA CodeCopy", null, (_, _) => RestoreFromTray());
         menu.Items.Add("Save from clipboard", null, (_, _) => SaveFromClipboard());
+        menu.Items.Add("Extract PAD flow", null, (_, _) => ExtractPadFlow());
         menu.Items.Add(_trayAutoCaptureItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => Close());
@@ -251,7 +255,8 @@ internal sealed class MainForm : Form
 
     private void OnClipboardChanged(object? sender, EventArgs e)
     {
-        if (!_settings.AutoCapture)
+        // During "Extract PAD flow" the extractor saves PAD's copies itself.
+        if (!_settings.AutoCapture || IsExtractionBusy)
         {
             return;
         }

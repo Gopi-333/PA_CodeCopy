@@ -16,6 +16,12 @@ public static class AppPaths
 
     public static string LogFolder => Path.Combine(DataFolder, "logs");
 
+    /// <summary>Documents\PaCodeCopy\Diagnostics — "Scan PAD window" reports.</summary>
+    public static string DiagnosticsFolder { get; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        AppFolderName,
+        "Diagnostics");
+
     /// <summary>Documents\PaCodeCopy\Snippets — default home for snippet files.</summary>
     public static string DefaultSnippetsRoot { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),

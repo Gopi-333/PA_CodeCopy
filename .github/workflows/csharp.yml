@@ -1,0 +1,31 @@
+name: C# app - tests on Windows
+
+on:
+  push:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "tools/**"
+      - "PA_CodeCopy.sln"
+      - "Directory.Build.props"
+      - ".github/workflows/csharp.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build
+        run: dotnet build PA_CodeCopy.sln -c Release
+
+      - name: Unit tests
+        run: dotnet test tests/PaCodeCopy.Tests -c Release --no-build
+
+      - name: "End-to-end: Extract PAD flow against a fake PAD designer (real UI Automation)"
+        run: dotnet run --project tests/PaCodeCopy.UiHarness -c Release --no-build -- "tools/FakePadDesigner/bin/Release/net8.0-windows/PAD.Designer.exe"

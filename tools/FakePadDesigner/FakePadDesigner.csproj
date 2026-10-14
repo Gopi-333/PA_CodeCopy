@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Test double for the Power Automate Desktop designer (named PAD.Designer.exe like the real one):
+       subflow tabs "Main", "Login", "Empty" whose lists copy PAD script with Ctrl+A / Ctrl+C. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>PAD.Designer</AssemblyName>
+    <RootNamespace>FakePadDesigner</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>

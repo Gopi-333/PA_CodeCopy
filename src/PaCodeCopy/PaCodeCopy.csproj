@@ -4,6 +4,8 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <!-- Only for System.Windows.Automation (UIAutomationClient), used to read flows from the PAD designer. -->
+    <UseWPF>true</UseWPF>
     <!-- Lets the project compile on Linux/macOS build agents; it still only runs on Windows. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <AssemblyName>PaCodeCopy</AssemblyName>
@@ -11,6 +13,16 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationVisualStyles>true</ApplicationVisualStyles>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UseWPF removes System.IO from the implicit usings (to avoid System.Windows.Shapes.Path clashes). -->
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- End-to-end UI Automation test against a fake PAD designer (runs on Windows CI). -->
+    <InternalsVisibleTo Include="PaCodeCopy.UiHarness" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PaCodeCopy.Core\PaCodeCopy.Core.csproj" />
