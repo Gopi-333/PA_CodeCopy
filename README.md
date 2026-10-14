@@ -162,6 +162,8 @@ src/PaCodeCopy/               net8.0-windows WinForms app
   Forms/                      MainForm, SnippetEditForm, SettingsForm
   Program.cs                  single-instance start-up, global exception handling
 tests/PaCodeCopy.Tests/       xUnit tests for the Core library
+tests/PaCodeCopy.UiHarness/   end-to-end test of "Extract PAD flow" with real UI Automation (Windows CI)
+tools/FakePadDesigner/        WPF stand-in for PAD.Designer.exe used by that test
 ```
 
 ### Design notes
