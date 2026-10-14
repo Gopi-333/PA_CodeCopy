@@ -75,7 +75,7 @@ public sealed class SnippetServiceTests : IDisposable
         var first = _service.Save(Samples.ExcelLoop, SnippetSource.Auto, requirePadScript: true);
         _now = _now.AddMinutes(5);
 
-        var second = _service.Save(Samples.ExcelLoop.Replace("\n", "\r\n") + "\r\n  ", SnippetSource.Auto, requirePadScript: true);
+        var second = _service.Save(Samples.ExcelLoop.ReplaceLineEndings("\r\n") + "\r\n  ", SnippetSource.Auto, requirePadScript: true);
 
         Assert.Equal(SaveOutcome.Duplicate, second.Outcome);
         Assert.Equal(first.Snippet!.Id, second.Snippet!.Id);
