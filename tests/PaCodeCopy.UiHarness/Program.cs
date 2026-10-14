@@ -28,7 +28,8 @@ internal static class Program
         }
 
         var temp = Directory.CreateTempSubdirectory("pacodecopy-ui-");
-        using var fakePad = Process.Start(new ProcessStartInfo(args[0]) { UseShellExecute = true })!;
+        var fakePadPath = Path.GetFullPath(args[0]);
+        using var fakePad = Process.Start(new ProcessStartInfo(fakePadPath) { UseShellExecute = false })!;
         try
         {
             var window = WaitForPadWindow(TimeSpan.FromSeconds(60));
