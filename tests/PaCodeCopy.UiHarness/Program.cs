@@ -63,6 +63,8 @@ internal static class Program
             if (failures.Count > 0)
             {
                 Console.Error.WriteLine("FAILED:\n  " + string.Join("\n  ", failures));
+                Console.WriteLine("---- UI Automation tree of the fake PAD window ----");
+                Console.WriteLine(File.ReadAllText(PadWindowFinder.ScanToFile(WaitForPadWindow(TimeSpan.FromSeconds(5)))));
                 return 1;
             }
 

@@ -42,7 +42,7 @@ internal sealed class UiaPadDesigner : IPadDesigner
         _logger = logger;
         FlowName = window.FlowName;
         _tabs = FindSubflowTabs();
-        _logger.Info($"PAD window '{window.Title}': found {_tabs.Count} subflow tab(s): {string.Join(", ", _tabs.Select(SafeName))}.");
+        _logger.Info($"PAD window '{window.Title}': found {_tabs.Count} subflow tab(s): {string.Join(", ", _tabs.Select(Describe))}.");
     }
 
     public string FlowName { get; }
@@ -149,10 +149,16 @@ internal sealed class UiaPadDesigner : IPadDesigner
         }
 
         var stopwatch = Stopwatch.StartNew();
+        bool? selected = null;
         while (stopwatch.Elapsed < TabSwitchTimeout)
         {
-            if (!tab.TryGetCurrentPattern(SelectionItemPattern.Pattern, out var state) ||
-                ((SelectionItemPattern)state).Current.IsSelected)
+            if (!tab.TryGetCurrentPattern(SelectionItemPattern.Pattern, out var state))
+            {
+                break;
+            }
+
+            selected = ((SelectionItemPattern)state).Current.IsSelected;
+            if (selected == true)
             {
                 break;
             }
@@ -160,6 +166,7 @@ internal sealed class UiaPadDesigner : IPadDesigner
             Thread.Sleep(100);
         }
 
+        _logger.Info($"Subflow tab '{name}': selected={selected?.ToString() ?? "unknown"}.");
         return tab;
     }
 
@@ -206,6 +213,7 @@ internal sealed class UiaPadDesigner : IPadDesigner
 
         if (list is not null)
         {
+            _logger.Info($"Action list: {Describe(list)} (probe {probe?.ToString() ?? "none"}, {candidates.Count} candidates).");
             try
             {
                 list.SetFocus();
@@ -220,6 +228,7 @@ internal sealed class UiaPadDesigner : IPadDesigner
             return;
         }
 
+        _logger.Info($"No action list found; clicking below the tabs at {probe?.ToString() ?? "(none)"}.");
         if (probe is not null)
         {
             // No list found: click just below the tabs (a single click only selects; it never edits).
@@ -238,6 +247,12 @@ internal sealed class UiaPadDesigner : IPadDesigner
     private static bool IsAutomationFailure(Exception ex) =>
         ex is ElementNotAvailableException or NotImplementedException or NotSupportedException
             or InvalidOperationException or System.Runtime.InteropServices.COMException;
+
+    private static string Describe(AutomationElement element)
+    {
+        var info = element.Current;
+        return $"{info.ControlType.ProgrammaticName} name='{info.Name}' id='{info.AutomationId}' bounds={info.BoundingRectangle}";
+    }
 
     private static double Area(Rect rect) => rect.IsEmpty ? 0 : rect.Width * rect.Height;
 
