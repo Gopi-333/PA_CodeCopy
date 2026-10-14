@@ -33,6 +33,8 @@ internal sealed class UiaPadDesigner : IPadDesigner
     private readonly AutomationElement _root;
     private readonly IAppLogger _logger;
     private List<AutomationElement> _tabs;
+    private List<string> _tabNames;
+    private readonly HashSet<int> _copiedTabs = new();
 
     public UiaPadDesigner(PadWindow window, IAppLogger logger)
     {
@@ -42,13 +44,14 @@ internal sealed class UiaPadDesigner : IPadDesigner
         _logger = logger;
         FlowName = window.FlowName;
         _tabs = FindSubflowTabs();
+        _tabNames = _tabs.Select(SafeName).ToList();
         _logger.Info($"PAD window '{window.Title}': found {_tabs.Count} subflow tab(s): {string.Join(", ", _tabs.Select(Describe))}.");
     }
 
     public string FlowName { get; }
 
-    public IReadOnlyList<string> GetSubflowNames() =>
-        _tabs.Select(SafeName).Where(n => n.Length > 0).Distinct(StringComparer.Ordinal).ToList();
+    /// <summary>Tab names in screen order. Kept even if two tabs report the same name; tabs are used by position.</summary>
+    public IReadOnlyList<string> GetSubflowNames() => _tabNames;
 
     public string? CopySubflow(string? subflowName, CancellationToken cancellationToken)
     {
@@ -128,11 +131,20 @@ internal sealed class UiaPadDesigner : IPadDesigner
 
     private AutomationElement SelectTab(string name)
     {
-        var tab = FindTab(name);
-        if (tab is null)
+        // Use the next not-yet-copied tab with this name (by position), so duplicate names still work.
+        var index = Enumerable.Range(0, _tabNames.Count)
+            .FirstOrDefault(i => _tabNames[i] == name && !_copiedTabs.Contains(i), -1);
+        if (index < 0)
+        {
+            throw new InvalidOperationException($"Subflow tab '{name}' was not found.");
+        }
+
+        _copiedTabs.Add(index);
+        var tab = _tabs[index];
+        if (!IsAlive(tab))
         {
             _tabs = FindSubflowTabs(); // tabs may have been re-created
-            tab = FindTab(name) ?? throw new InvalidOperationException($"Subflow tab '{name}' was not found.");
+            tab = index < _tabs.Count ? _tabs[index] : throw new InvalidOperationException($"Subflow tab '{name}' is gone.");
         }
 
         if (tab.TryGetCurrentPattern(SelectionItemPattern.Pattern, out var selection))
@@ -170,8 +182,18 @@ internal sealed class UiaPadDesigner : IPadDesigner
         return tab;
     }
 
-    private AutomationElement? FindTab(string name) =>
-        _tabs.FirstOrDefault(t => string.Equals(SafeName(t), name, StringComparison.Ordinal));
+    private static bool IsAlive(AutomationElement element)
+    {
+        try
+        {
+            _ = element.Current.BoundingRectangle;
+            return true;
+        }
+        catch (ElementNotAvailableException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>Puts keyboard focus on the action list, so Ctrl+A selects the actions.</summary>
     private void FocusActionList(AutomationElement? tab)
