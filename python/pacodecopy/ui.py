@@ -9,10 +9,12 @@ import subprocess
 import sys
 import time
 import tkinter as tk
+from datetime import datetime, timedelta, timezone
 from tkinter import filedialog, messagebox, ttk
 
 from .config import MAX_DETECTION_THRESHOLD, MIN_DETECTION_THRESHOLD, AppSettings, SettingsStore
 from .models import SaveOutcome, SaveResult, Snippet, SnippetSource
+from .padcontext import detect_flow_name
 from .service import SnippetService, compute_hash
 
 APP_TITLE = "PA CodeCopy (Python) - Power Automate Desktop snippets"
@@ -206,10 +208,16 @@ class MainWindow:
         return False
 
     def _auto_save(self, text: str) -> None:
-        result = self._service.save(text, SnippetSource.AUTO, require_pad_script=True)
+        if not self._service.analyze(text).is_pad_script:
+            return  # ordinary copies are ignored silently
+        # Save into the folder of the PAD flow the code was copied from (default folder otherwise).
+        result = self._service.save(text, SnippetSource.AUTO, require_pad_script=True, category=detect_flow_name())
         if result.outcome == SaveOutcome.SAVED:
             self._after_save(result)
         elif result.outcome == SaveOutcome.DUPLICATE:
+            # One Ctrl+C can raise several clipboard changes; keep the "Saved …" message of a fresh save.
+            if result.snippet and datetime.now(timezone.utc) - result.snippet.created_at < timedelta(seconds=5):
+                return
             self._set_status(result.message)
             self._reload_list(select_id=result.snippet.id if result.snippet else None)
         elif result.outcome == SaveOutcome.FAILED:
@@ -250,7 +258,9 @@ class MainWindow:
             parent=self.root,
         ):
             return
-        self._handle_manual_result(self._service.save(text, SnippetSource.MANUAL, require_pad_script=False))
+        self._handle_manual_result(
+            self._service.save(text, SnippetSource.MANUAL, require_pad_script=False, category=detect_flow_name())
+        )
 
     def paste_and_save(self) -> None:
         dialog = SnippetDialog(self.root, "Paste & Save", self._service.get_categories(), "",
@@ -275,7 +285,8 @@ class MainWindow:
     def _after_save(self, result: SaveResult) -> None:
         self._reload_categories()
         self._reload_list(select_id=result.snippet.id if result.snippet else None)
-        self._set_status(result.message)
+        snippet = result.snippet
+        self._set_status(f"Saved '{snippet.name}' in folder '{snippet.category}'." if snippet else result.message)
 
     def copy_selected_to_clipboard(self) -> str:
         snippet = self._selected()

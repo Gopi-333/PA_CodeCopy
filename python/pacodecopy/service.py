@@ -90,7 +90,9 @@ class SnippetService:
         name: str | None = None,
         category: str | None = None,
         tags: str | None = None,
+        name_prefix: str | None = None,
     ) -> SaveResult:
+        """Saves code as a snippet. name_prefix (e.g. a PAD subflow) is put before the generated name."""
         if text is None or not text.strip():
             return SaveResult(SaveOutcome.EMPTY, None, "Nothing to save: the text is empty.")
 
@@ -112,7 +114,9 @@ class SnippetService:
                 self._repository.delete(existing.id)
 
             snippet = Snippet(
-                name=name.strip() if name and name.strip() else _default_name(detection),
+                name=(name.strip() if name and name.strip()
+                      else f"{name_prefix.strip()} - {_default_name(detection)}" if name_prefix and name_prefix.strip()
+                      else _default_name(detection)),
                 category=category.strip() if category and category.strip() else self.default_category,
                 tags=normalize_tags(tags),
                 file_path="",

@@ -16,7 +16,7 @@ END
 
 | Feature | Details |
 |---|---|
-| Auto-capture | Copies of PAD actions are saved automatically. Normal copies (emails, URLs, other code) are ignored. |
+| Auto-capture | Copies of PAD actions are saved automatically, **in a folder named after the PAD flow (project)** you copied from, e.g. `Snippets\Invoice processing\Main - Excel.LaunchExcel +5 more.txt`. Normal copies (emails, URLs, other code) are ignored. |
 | Manual save | **Save from clipboard** (Ctrl+S) or **Paste & Save…** (paste any code and give it a name, category and tags). |
 | No duplicates | Copying the same actions again does not create a second file. It only updates "Last copied". |
 | Search | Search by name, tags **or code** (e.g. `SendEmail`), and filter by category. |
@@ -30,7 +30,7 @@ END
 
 | What | Location |
 |---|---|
-| Snippet files (one `.txt` per snippet) | `Documents\PaCodeCopy\Snippets\<Category>\yyyyMMdd_HHmmss_<Name>.txt` (can be changed in Settings) |
+| Snippet files (one `.txt` per snippet) | `Documents\PaCodeCopy\Snippets\<Flow name>\yyyyMMdd_HHmmss_<Subflow> - <First action>.txt` (folder can be changed in Settings) |
 | Search index (SQLite) | `%LOCALAPPDATA%\PaCodeCopy\index.db` |
 | Settings | `%LOCALAPPDATA%\PaCodeCopy\settings.json` |
 | Logs (one file per day) | `%LOCALAPPDATA%\PaCodeCopy\logs\` |
@@ -99,6 +99,18 @@ Add `--self-contained true` if the target PCs do not have .NET installed (the ex
 | F2 | Edit name / category / tags |
 | Del | Delete selected snippet |
 | F5 | Refresh list |
+
+## One folder per PAD flow (project)
+
+When you copy actions in the PAD designer, PA CodeCopy looks at the PAD window you copied from:
+
+- **Folder (category)** = the flow name from the PAD window title, e.g. `Invoice processing`.
+- **Name** = the open subflow + the first action, e.g. `Main - Excel.LaunchExcel +5 more`.
+  If the subflow cannot be read, the name is just the first action.
+- Copies that do not come from the PAD designer go to the default category (`General`, see Settings).
+
+This also works for **Save from clipboard**. Code you copied earlier is not moved: copying the same actions again only
+updates "Last copied". To move a snippet, use **Edit** (F2) and change its category.
 
 ## Extract a whole flow with one click
 

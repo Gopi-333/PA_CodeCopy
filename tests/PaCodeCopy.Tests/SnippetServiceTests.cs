@@ -61,6 +61,34 @@ public sealed class SnippetServiceTests : IDisposable
         Assert.Equal("Misc", Path.GetFileName(Path.GetDirectoryName(result.Snippet.FilePath)));
     }
 
+    [Fact]
+    public void Copy_from_a_pad_flow_is_saved_in_the_flow_folder_with_the_subflow_in_the_name()
+    {
+        var result = _service.Save(Samples.ExcelLoop, SnippetSource.Auto, requirePadScript: true,
+            category: "Invoice processing", namePrefix: "Main");
+
+        Assert.Equal("Main - Excel.LaunchExcel +5 more", result.Snippet!.Name);
+        Assert.Equal("Invoice processing", result.Snippet.Category);
+        Assert.Equal(Path.Combine(SnippetsRoot, "Invoice processing"), Path.GetDirectoryName(result.Snippet.FilePath));
+    }
+
+    [Fact]
+    public void Explicit_name_wins_over_the_name_prefix()
+    {
+        var result = _service.Save(Samples.ExcelLoop, SnippetSource.Manual, requirePadScript: false,
+            name: "My name", namePrefix: "Main");
+
+        Assert.Equal("My name", result.Snippet!.Name);
+    }
+
+    [Fact]
+    public void Without_a_flow_the_default_folder_and_name_are_used()
+    {
+        var result = _service.Save(Samples.ExcelLoop, SnippetSource.Auto, requirePadScript: true, category: null, namePrefix: " ");
+
+        Assert.Equal(("Excel.LaunchExcel +5 more", "General"), (result.Snippet!.Name, result.Snippet.Category));
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("  \r\n ")]

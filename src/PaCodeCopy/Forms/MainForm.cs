@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using PaCodeCopy.Core.Configuration;
+using PaCodeCopy.Core.Extraction;
 using PaCodeCopy.Core.Logging;
 using PaCodeCopy.Core.Models;
 using PaCodeCopy.Core.Services;
@@ -253,7 +254,7 @@ internal sealed partial class MainForm : Form
         }
     }
 
-    private void OnClipboardChanged(object? sender, EventArgs e)
+    private async void OnClipboardChanged(object? sender, EventArgs e)
     {
         // During "Extract PAD flow" the extractor saves PAD's copies itself.
         if (!_settings.AutoCapture || IsExtractionBusy)
@@ -262,25 +263,35 @@ internal sealed partial class MainForm : Form
         }
 
         var text = ClipboardHelper.TryGetText(_logger);
-        if (text is null || IsOwnCopy(text))
+        if (text is null || IsOwnCopy(text) || !_service.Analyze(text).IsPadScript)
         {
             return;
         }
 
-        var result = _service.Save(text, SnippetSource.Auto, requirePadScript: true);
+        // Save into the folder of the PAD flow the code was copied from (default category otherwise).
+        var source = await DetectCopySourceAsync();
+        var result = _service.Save(text, SnippetSource.Auto, requirePadScript: true,
+            category: source?.FlowName, namePrefix: source?.SubflowName);
         switch (result.Outcome)
         {
             case SaveOutcome.Saved:
                 AfterSave(result);
                 if (_settings.ShowNotifications && !Visible)
                 {
-                    _trayIcon.ShowBalloonTip(2000, "Snippet saved", result.Snippet!.Name, ToolTipIcon.Info);
+                    _trayIcon.ShowBalloonTip(2000, "Snippet saved",
+                        $"{result.Snippet!.Name}\nFolder: {result.Snippet.Category}", ToolTipIcon.Info);
                 }
 
                 break;
             case SaveOutcome.Duplicate:
+                // One Ctrl+C can raise several clipboard events; keep the "Saved …" message of a fresh save.
+                if (DateTime.UtcNow - result.Snippet!.CreatedAt < TimeSpan.FromSeconds(5))
+                {
+                    break;
+                }
+
                 SetStatus(result.Message);
-                ReloadList(selectId: result.Snippet?.Id);
+                ReloadList(selectId: result.Snippet.Id);
                 break;
             case SaveOutcome.Failed:
                 SetStatus(result.Message);
@@ -335,7 +346,7 @@ internal sealed partial class MainForm : Form
 
     // ---------------------------------------------------------------- actions
 
-    private void SaveFromClipboard()
+    private async void SaveFromClipboard()
     {
         var text = ClipboardHelper.TryGetText(_logger);
         if (string.IsNullOrWhiteSpace(text))
@@ -356,7 +367,9 @@ internal sealed partial class MainForm : Form
             }
         }
 
-        var result = _service.Save(text, SnippetSource.Manual, requirePadScript: false);
+        var source = await DetectCopySourceAsync();
+        var result = _service.Save(text, SnippetSource.Manual, requirePadScript: false,
+            category: source?.FlowName, namePrefix: source?.SubflowName);
         HandleManualResult(result);
     }
 
@@ -398,7 +411,22 @@ internal sealed partial class MainForm : Form
     {
         ReloadCategories();
         ReloadList(selectId: result.Snippet?.Id);
-        SetStatus(result.Message);
+        SetStatus(result.Snippet is { } snippet ? $"Saved '{snippet.Name}' in folder '{snippet.Category}'." : result.Message);
+    }
+
+    /// <summary>The PAD flow (and subflow) the clipboard content came from; null when not copied in the PAD designer.</summary>
+    private async Task<PadCopySource?> DetectCopySourceAsync()
+    {
+        try
+        {
+            // Off the UI thread: the subflow lookup uses UI Automation.
+            return await Task.Run(() => PadCopyContext.Detect(_logger));
+        }
+        catch (Exception ex)
+        {
+            _logger.Warn("Could not find the PAD flow of the copy; using the default folder.", ex);
+            return null;
+        }
     }
 
     private void CopySelectedToClipboard()

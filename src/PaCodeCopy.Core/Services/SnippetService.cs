@@ -59,13 +59,18 @@ public sealed class SnippetService
     /// <param name="name">Optional name; defaults to the first action, e.g. "Excel.LaunchExcel +5 more".</param>
     /// <param name="category">Optional category; defaults to <see cref="DefaultCategory"/>.</param>
     /// <param name="tags">Optional comma-separated tags.</param>
+    /// <param name="namePrefix">
+    /// Optional prefix for the generated name (used when <paramref name="name"/> is empty), e.g. the PAD subflow:
+    /// "Main" gives "Main - Excel.LaunchExcel +5 more".
+    /// </param>
     public SaveResult Save(
         string? text,
         SnippetSource source,
         bool requirePadScript,
         string? name = null,
         string? category = null,
-        string? tags = null)
+        string? tags = null,
+        string? namePrefix = null)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -100,7 +105,9 @@ public sealed class SnippetService
 
             var snippet = new Snippet
             {
-                Name = string.IsNullOrWhiteSpace(name) ? DefaultName(detection) : name.Trim(),
+                Name = !string.IsNullOrWhiteSpace(name) ? name.Trim()
+                    : !string.IsNullOrWhiteSpace(namePrefix) ? $"{namePrefix.Trim()} - {DefaultName(detection)}"
+                    : DefaultName(detection),
                 Category = string.IsNullOrWhiteSpace(category) ? DefaultCategory : category.Trim(),
                 Tags = NormalizeTags(tags),
                 Hash = hash,

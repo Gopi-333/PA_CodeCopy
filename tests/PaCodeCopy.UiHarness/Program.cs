@@ -60,6 +60,18 @@ internal static class Program
             Check(failures, snippets.All(s => s.Category == "Demo invoices"), "category is the flow name");
             Check(failures, snippets.FirstOrDefault(s => s.Name == "Main")?.ActionCount == 4, "Main has 4 detected actions");
 
+            // Auto-capture: a copy made in PAD's "Login" subflow must be traced back to flow + subflow.
+            var copied = new UiaPadDesigner(window, logger).CopySubflow("Login", CancellationToken.None);
+            var source = PadCopyContext.Detect(logger);
+            Console.WriteLine($"Copy source: flow '{source?.FlowName}', subflow '{source?.SubflowName}'.");
+            Check(failures, copied == ExpectedLogin, "copied the Login subflow for the source check");
+            Check(failures, source?.FlowName == "Demo invoices", "copy source flow is 'Demo invoices'");
+            Check(failures, source?.SubflowName == "Login", "copy source subflow is 'Login'");
+
+            var autoSaved = service.Save(copied, PaCodeCopy.Core.Models.SnippetSource.Auto, requirePadScript: true,
+                category: source?.FlowName, namePrefix: source?.SubflowName);
+            Console.WriteLine($"Auto-capture would save: '{autoSaved.Snippet?.Name}' in folder '{autoSaved.Snippet?.Category}' ({autoSaved.Outcome}).");
+
             if (failures.Count > 0)
             {
                 Console.Error.WriteLine("FAILED:\n  " + string.Join("\n  ", failures));

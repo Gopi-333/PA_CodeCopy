@@ -30,7 +30,7 @@ Both versions use the **same data**, so you see the same snippets in either app:
 
 | What | Location |
 |---|---|
-| Snippet files | `Documents\PaCodeCopy\Snippets\<Category>\yyyyMMdd_HHmmss_<Name>.txt` |
+| Snippet files | `Documents\PaCodeCopy\Snippets\<Flow name>\yyyyMMdd_HHmmss_<First action>.txt` (copies made in the PAD designer go to a folder named after the flow; others to `General`) |
 | Search index (SQLite, same table and date format) | `%LOCALAPPDATA%\PaCodeCopy\index.db` |
 | Settings (same `settings.json`) | `%LOCALAPPDATA%\PaCodeCopy\settings.json` |
 | Logs | `%LOCALAPPDATA%\PaCodeCopy\logs\pacodecopy-py-YYYYMMDD.log` |
@@ -42,6 +42,7 @@ Only **one** of the two apps can run at a time (they share a lock), so each copy
 | | C# | Python |
 |---|---|---|
 | Clipboard watching | Windows event (`AddClipboardFormatListener`) | Checks `GetClipboardSequenceNumber` every 0.5 s (very cheap) |
+| Snippet name for PAD copies | `<Subflow> - <First action>` | `<First action>` (the subflow needs UI Automation) |
 | System-tray icon and balloons | Yes | No (Tkinter has none; it would need the extra `pystray` package). Minimise goes to the taskbar |
 | Runs on | Windows | Windows (macOS/Linux work for testing, using Tk's clipboard) |
 

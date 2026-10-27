@@ -20,7 +20,6 @@ namespace PaCodeCopy.Interop;
 /// </remarks>
 internal sealed class UiaPadDesigner : IPadDesigner
 {
-    private const string MainSubflowName = "Main";
     private static readonly TimeSpan ForegroundTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan CopyTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan TabSwitchTimeout = TimeSpan.FromSeconds(2);
@@ -102,24 +101,7 @@ internal sealed class UiaPadDesigner : IPadDesigner
     {
         try
         {
-            var mainTab = _root.FindFirst(TreeScope.Descendants, new AndCondition(
-                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem),
-                new PropertyCondition(AutomationElement.NameProperty, MainSubflowName, PropertyConditionFlags.IgnoreCase)));
-            if (mainTab is null)
-            {
-                return new List<AutomationElement>();
-            }
-
-            var strip = TreeWalker.ControlViewWalker.GetParent(mainTab);
-            if (strip is null)
-            {
-                return new List<AutomationElement> { mainTab };
-            }
-
-            return strip.FindAll(TreeScope.Children,
-                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem))
-                .Cast<AutomationElement>()
-                .ToList();
+            return PadUia.FindSubflowTabs(_root);
         }
         catch (Exception ex) when (IsAutomationFailure(ex))
         {
@@ -266,9 +248,7 @@ internal sealed class UiaPadDesigner : IPadDesigner
         }
     }
 
-    private static bool IsAutomationFailure(Exception ex) =>
-        ex is ElementNotAvailableException or NotImplementedException or NotSupportedException
-            or InvalidOperationException or System.Runtime.InteropServices.COMException;
+    private static bool IsAutomationFailure(Exception ex) => PadUia.IsAutomationFailure(ex);
 
     private static string Describe(AutomationElement element)
     {

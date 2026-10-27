@@ -68,6 +68,18 @@ class SnippetServiceTests(TempFolderMixin, unittest.TestCase):
         self.assertEqual(("Notes", "Misc", "a, b"), (result.snippet.name, result.snippet.category, result.snippet.tags))
         self.assertEqual("Misc", os.path.basename(os.path.dirname(result.snippet.file_path)))
 
+    def test_copy_from_a_pad_flow_goes_to_the_flow_folder_with_the_prefix(self):
+        result = self.save_auto(samples.EXCEL_LOOP, category="Invoice processing", name_prefix="Main")
+        self.assertEqual("Main - Excel.LaunchExcel +5 more", result.snippet.name)
+        self.assertEqual("Invoice processing", result.snippet.category)
+        self.assertEqual("Invoice processing", os.path.basename(os.path.dirname(result.snippet.file_path)))
+
+    def test_explicit_name_wins_over_prefix_and_blank_prefix_is_ignored(self):
+        named = self.service.save(samples.EXCEL_LOOP, SnippetSource.MANUAL, False, name="Mine", name_prefix="Main")
+        self.assertEqual("Mine", named.snippet.name)
+        plain = self.service.save(samples.IF_ELSE, SnippetSource.MANUAL, False, name_prefix="  ")
+        self.assertEqual(("File.WriteText +2 more", "General"), (plain.snippet.name, plain.snippet.category))
+
     def test_empty_text_is_not_saved(self):
         for text in (None, "  \r\n "):
             with self.subTest(text=text):
